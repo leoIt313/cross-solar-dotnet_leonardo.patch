@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using CrossSolar.Domain;
 using CrossSolar.Models;
 using CrossSolar.Repository;
@@ -6,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CrossSolar.Controllers
 {
-    [Route("[controller]")]
+    [Route("api")]
     public class PanelController : Controller
     {
         private readonly IPanelRepository _panelRepository;
@@ -17,22 +20,41 @@ namespace CrossSolar.Controllers
         }
 
         // POST api/panel
-        [HttpPost]
+        [HttpPost("[controller]/register")]
         public async Task<IActionResult> Register([FromBody] PanelModel value)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var panel = new Panel
+            try
             {
-                Latitude = value.Latitude,
-                Longitude = value.Longitude,
-                Serial = value.Serial,
-                Brand = value.Brand
-            };
+                Regex regexObj = new Regex(@"-?\d{1,2}\.\d{6}");
 
-            await _panelRepository.InsertAsync(panel);
+                if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            return Created($"panel/{panel.Id}", panel);
+                if (!regexObj.Match(value.Latitude.ToString(CultureInfo.InvariantCulture)).Success)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                if (!regexObj.Match(value.Longitude.ToString(CultureInfo.InvariantCulture)).Success)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var panel = new Panel
+                {
+                    Latitude = Convert.ToDouble(value.Latitude),
+                    Longitude = Convert.ToDouble(value.Longitude),
+                    Serial = value.Serial,
+                    Brand = value.Brand
+                };
+
+                await _panelRepository.InsertAsync(panel);
+
+                return Created($"panel/{panel.Id}", panel);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }

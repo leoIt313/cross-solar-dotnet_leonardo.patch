@@ -44,6 +44,7 @@ namespace CrossSolar
             }
 
             app.UseMvc();
+
         }
     }
 }
